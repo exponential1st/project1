@@ -1,0 +1,115 @@
+---
+title: "Course Project 1"
+
+date: "12 June 2016"
+output: md_document
+---
+
+
+1. load the data from local disk and display basic information
+```{r}
+
+mydata <- read.csv("c:\\project\\activity_data\\activity.csv")
+summary(mydata)
+
+```
+
+2.Histogram of the total number of steps taken each day. 
+
+```{r}
+totalStepsPerDay<-aggregate(mydata$steps, by=list(date=mydata$date), FUN=sum)
+totalStepsPerDay<-aggregate(mydata$steps, by=list(date=mydata$date), FUN=sum,na.rm=TRUE)
+hist(totalStepsPerDay$x, xlab="step per day",main="histogram for total activity per day")
+```
+
+
+3. mean and median number of steps taken each day
+```{r}
+
+ mean(totalStepsPerDay$x)
+
+ median(totalStepsPerDay$x)
+  
+```
+4.Time series plot of the average number of steps taken
+  
+```{r}
+ 
+  time_series <- tapply(mydata$steps, mydata$interval, mean, na.rm = TRUE)
+  
+   plot(row.names(time_series), time_series, type = "l", xlab = "5-min interval", 
+      ylab = "Average across all Days", main = "Average number of steps taken", 
+      col = "red")
+```
+
+5. The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+ max_interval <-which.max(time_series)
+names(max_interval)
+
+```
+
+get count of the na data
+```{r}
+activity_NA <- sum(is.na(mydata))
+activity_NA
+```
+
+6. replace missing data with interval average
+```{r}
+StepsAverage <- aggregate(steps ~ interval, data = mydata, FUN = mean)
+fillNA <- numeric()
+for (i in 1:nrow(mydata)) {
+    obs <- mydata[i, ]
+    if (is.na(obs$steps)) {
+        steps <- subset(StepsAverage, interval == obs$interval)$steps
+    } else {
+        steps <- obs$steps
+    }
+    fillNA <- c(fillNA, steps)
+}
+```
+
+prepare na data
+```{r}
+ new_activity <- mydata
+ new_activity$steps <- fillNA
+```
+
+7. Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+ StepsTotal2 <- aggregate(steps ~ date, data = new_activity, sum, na.rm = TRUE)
+ hist(StepsTotal2$steps, main = "Total steps by day", xlab = "day", col = "red")
+```
+ 
+ 
+ mean 
+ 
+```{r}
+ 
+ mean(StepsTotal2$steps)
+```
+ 
+ 
+ 
+ median
+ 
+```{r}
+ median(StepsTotal2$steps)
+```
+ 
+ 8.Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r}
+new_activity$type_of_day <- weekdays(as.Date(new_activity$date))
+new_activity$type_of_day[new_activity$type_of_day  %in% c("Saturday","Sunday") ] <- "weekend"
+new_activity$type_of_day[new_activity$type_of_day != "weekend"] <- "weekday"
+ new_activity_interval <- aggregate(steps ~ interval + type_of_day, new_activity, mean)
+```
+ 
+plot 
+```{r}
+  library(lattice)
+ xyplot(steps ~ interval |type_of_day, new_activity_interval, type = "l", layout = c(1, 2), 
+        xlab = "Interval", ylab = "Number of steps")
+ ```
+ 
